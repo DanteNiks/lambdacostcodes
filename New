@@ -1,0 +1,35 @@
+import boto3
+import csv
+
+# Initialize the Boto3 client for AWS Resource Groups Tagging API
+client = boto3.client('resourcegroupstaggingapi')
+
+# Retrieve a list of all tagged resources
+paginator = client.get_paginator('get_resources')
+tagged_resources = []
+
+for page in paginator.paginate():
+    tagged_resources.extend(page['ResourceTagMappingList'])
+
+# Define the CSV file name
+csv_file = 'tagged_resources_report.csv'
+
+# Write the data to the CSV file
+with open(csv_file, mode='w', newline='') as file:
+    writer = csv.writer(file)
+    
+    # Write the header row
+    writer.writerow(['Resource ARN', 'Tag Key', 'Tag Value', 'Service'])
+    
+    # Write the data rows
+    for resource in tagged_resources:
+        resource_arn = resource['ResourceARN']
+        tags = resource.get('Tags', [])
+        service = resource_arn.split(':')[2] if 'ResourceARN' in resource else ''
+        
+        for tag in tags:
+            tag_key = tag['Key']
+            tag_value = tag['Value']
+            writer.writerow([resource_arn, tag_key, tag_value, service])
+            
+print(f"Tagged resources data has been written to {csv_file}")
